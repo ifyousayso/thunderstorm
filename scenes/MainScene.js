@@ -3,7 +3,6 @@ import {
 	View,
 	Text,
 	StyleSheet,
-	Button,
 	TextInput,
 	ImageBackground,
 	Pressable,
@@ -21,86 +20,96 @@ import {
 import Spinner from "../components/ui/Spinner";
 
 const weatherStyles = () => {
-	const { width } = useWindowDimensions();
+	const { width, height } = useWindowDimensions();
+
+	const landscapeMode = width > height;
+	const landscapeRatio = landscapeMode ? 2 : 1;
+
 	const styles = StyleSheet.create({
 		screen: {
 			flex: 1
 		},
 		background: {
-			flex: 1
+			flex: 1,
+			justifyContent: "center",
+			paddingHorizontal: landscapeMode ? 0 : Math.round(width / 10),
+			paddingVertical: landscapeMode ? Math.round(width / 30) : 0,
+			flexDirection: landscapeMode ? "row" : "column"
 		},
 		textColor: {
 			color: "#fff"
 		},
-		weatherContainer: {
-			flex: 1,
+		myWeather: {
+			width: landscapeMode ? "45%" : "100%",
+			alignItems: "center",
 			justifyContent: "center",
-			marginHorizontal: 40
+			marginBottom: landscapeMode ? 0 : Math.round(width / 12)
 		},
-		currentWeatherInfo: {
-			alignItems: "center",
-			marginBottom: 50
+		localityWeather: {
+			width: landscapeMode ? "45%" : "100%",
+			justifyContent: "center",
+			alignItems: "center"
 		},
-		weatherInfoContainer: {
+		localityWeatherResult: {
 			alignItems: "center",
-			marginTop: 40
+			marginTop: Math.round(landscapeMode ? height / 18 : width / 12)
 		},
 		mainTitle: {
-			fontSize: width < 380 ? 24 : 38
+			fontSize: Math.round(width / 12 / landscapeRatio)
 		},
 		subTitle: {
-			fontSize: width < 380 ? 16 : 24
+			fontSize: Math.round(width / 16 / landscapeRatio)
 		},
 		smallTitle: {
-			fontSize: width < 380 ? 14 : 18
+			fontSize: Math.round(width / 20 / landscapeRatio),
+			lineHeight: Math.round(width / 13 / landscapeRatio)
 		},
 		highAndLow: {
-			flexDirection: "row"
+			width: "100%",
+			flexDirection: "row",
+			justifyContent: "space-evenly"
 		},
 		inputField: {
-			fontSize: width < 380 ? 16 : 24,
-			borderBottomColor: "#ffffff",
-			borderBottomWidth: width < 380 ? 1 : 2,
-			paddingVertical: width < 380 ? 0 : 2
+			width: "70%",
+			fontSize: Math.round(width / 18 / landscapeRatio),
+			borderBottomColor: "#fff",
+			borderBottomWidth: Math.round(width / 256 / landscapeRatio),
+			paddingVertical: Math.round(width / 256 / landscapeRatio)
 		},
 		button: {
 			backgroundColor: "#560856",
-			padding: width < 380 ? 6 : 8,
-			marginVertical: width < 380 ? 10 : 20,
+			width: "70%",
+			padding: Math.round(width / 42 / landscapeRatio),
+			marginTop: Math.round((landscapeMode ? height : width) / 21),
 			alignItems: "center",
-			borderRadius: 30
+			borderRadius: Math.round(width / 14 / landscapeRatio)
 		},
 		buttonText: {
-			fontSize: width < 380 ? 14 : 18
+			fontSize: Math.round(width / 20 / landscapeRatio)
 		},
 		pressed: {
 			opacity: 0.6
 		}
 	});
 
-	return { styles };
+	return { styles, width, height };
 };
 
 export default () => {
-	const [temp, setTemp] = useState("");
-	const [highTemp, setHighTemp] = useState("");
-	const [lowTemp, setLowTemp] = useState("");
-	const [sky, setSky] = useState("");
 	const [city, setCity] = useState("");
-	const [currentCity, setCurrentCity] = useState("STENUNGSUND");
-	const [currentTemp, setCurrentTemp] = useState("");
-	const [foundCity, setFoundCity] = useState("");
-
 	const [isLoading, setIsLoading] = useState(true);
 	const [location, setLocation] = useState(null);
 	const [searchedLocation, setSearchedLocation] = useState(null);
 
+	const { styles } = weatherStyles();
+
 	useEffect(() => {
 		(async () => {
-			// För att få tillgång eller inte till gps enhet...
+			// Be om lov att få använda GPS-enheten.
 			let { status } = await Location.requestForegroundPermissionsAsync();
+
 			if (status === "granted") {
-				// Hämta latitud och longitud för enhetens posision...
+				// Hämta latitud och longitud för enhetens posision.
 				let location = await Location.getCurrentPositionAsync();
 				const currentLocation = await getWeather(
 					location.coords.latitude,
@@ -113,55 +122,85 @@ export default () => {
 		})();
 	}, []);
 
-	const { styles } = weatherStyles();
+	const localityNotFound = () => {
+		Alert.alert(
+			"Information",
+			"No locality named " + city + " could be found."
+		);
+	};
 
 	const onSearchHandler = async () => {
 		try {
 			const location = await getWeatherByCity(city);
 
 			if (!location) {
-				Alert.alert(
-					"Hittar inte",
-					`Kan inte hitta någon stad med namnet ${city}`
-				);
-				return;
+				localityNotFound();
+			} else {
+				setSearchedLocation(location);
 			}
-			setSearchedLocation(location);
 		} catch (error) {
-			Alert.alert(
-				"Hittar inte",
-				`Kan inte hitta någon stad med namnet ${city}`
-			);
+			localityNotFound();
 		}
 	};
 
 	const onSaveAsFavorite = async () => {
-		const weatherData = {
-			city,
-			latitude: searchedLocation.coord.lat,
-			longitude: searchedLocation.coord.lon
-		};
-
 		const favorites = await listFavorites();
-		console.log(favorites);
 
-		const favorite = favorites.find((item) => item.city === city);
-
+		const favorite = favorites.find(
+			(item) => item.city === searchedLocation.name
+		);
 		if (favorite) {
-			Alert.alert("Favoriter", `${city} är redan upplagd som favorit`);
+			Alert.alert(
+				"Information",
+				searchedLocation.name + " is already in your favorites list."
+			);
 			return;
 		}
 
+		const weatherData = {
+			city: searchedLocation.name,
+			latitude: searchedLocation.coord.lat,
+			longitude: searchedLocation.coord.lon
+		};
 		await addAsFavorite(weatherData);
 		Alert.alert(
-			"Favoriter",
-			`${searchedLocation.name} är tillagd som favorit.`
+			"Information",
+			searchedLocation.name + " is added to your favorites."
 		);
 	};
 
 	if (isLoading) {
-		return <Spinner text="Vänta hämtar gps position..." />;
+		return <Spinner text="Fetching location - please wait" />;
 	}
+
+	const showLocalityWeather = () => {
+		if (searchedLocation !== null) {
+			return (
+				<>
+					<View style={styles.localityWeatherResult}>
+						<Text style={[styles.mainTitle, styles.textColor]}>
+							{searchedLocation.name}
+						</Text>
+						<Text style={[styles.subTitle, styles.textColor]}>
+							{Math.round(searchedLocation.main.temp) + " °C"}
+						</Text>
+					</View>
+					<View style={styles.button}>
+						<Pressable
+							onPress={onSaveAsFavorite}
+							style={({ pressed }) => pressed && styles.pressed}
+						>
+							<Text style={[styles.buttonText, styles.textColor]}>
+								Save as favorite
+							</Text>
+						</Pressable>
+					</View>
+				</>
+			);
+		} else {
+			return "";
+		}
+	};
 
 	return (
 		<View style={styles.screen}>
@@ -169,34 +208,30 @@ export default () => {
 				style={styles.background}
 				source={require("../assets/images/background.jpg")}
 			>
-				<View style={styles.weatherContainer}>
-					<View style={styles.currentWeatherInfo}>
-						<Text style={[styles.mainTitle, styles.textColor]}>
-							{location?.name}
+				<View style={styles.myWeather}>
+					<Text style={[styles.mainTitle, styles.textColor]}>
+						{location?.name}
+					</Text>
+					<Text style={[styles.subTitle, styles.textColor]}>
+						{Math.round(location?.main.temp)} °C
+					</Text>
+					<Text style={[styles.smallTitle, styles.textColor]}>
+						{location?.weather[0].description}
+					</Text>
+					<View style={styles.highAndLow}>
+						<Text style={[styles.smallTitle, styles.textColor]}>
+							High: {Math.round(location?.main.temp_max)} °C
 						</Text>
 						<Text style={[styles.smallTitle, styles.textColor]}>
-							Aktuell temperatur
+							Low: {Math.round(location?.main.temp_min)} °C
 						</Text>
-						<Text style={[styles.mainTitle, styles.textColor]}>
-							{Math.ceil(location?.main.temp)}
-						</Text>
-						<Text style={[styles.smallTitle, styles.textColor]}>
-							{location?.weather[0].description}
-						</Text>
-						<View style={styles.highAndLow}>
-							<Text style={[styles.smallTitle, styles.textColor]}>
-								H: {location?.main.temp_max}
-							</Text>
-							<Text> </Text>
-							<Text style={[styles.smallTitle, styles.textColor]}>
-								L: {location?.main.temp_min}
-							</Text>
-						</View>
 					</View>
+				</View>
 
+				<View style={styles.localityWeather}>
 					<TextInput
 						style={[styles.inputField, styles.textColor]}
-						placeholder="Ange ort"
+						placeholder="Locality"
 						placeholderTextColor="#b3b2b2"
 						onChangeText={(value) => setCity(value)}
 						value={city}
@@ -206,32 +241,10 @@ export default () => {
 							onPress={onSearchHandler}
 							style={({ pressed }) => pressed && styles.pressed}
 						>
-							<Text style={[styles.buttonText, styles.textColor]}>Sök</Text>
+							<Text style={[styles.buttonText, styles.textColor]}>Search</Text>
 						</Pressable>
 					</View>
-
-					<View style={styles.weatherInfoContainer}>
-						<Text style={[styles.mainTitle, styles.textColor]}>
-							{searchedLocation?.name}
-						</Text>
-						<Text style={[styles.subTitle, styles.textColor]}>
-							Temperatur -{" "}
-							{searchedLocation !== null
-								? Math.ceil(searchedLocation.main.temp)
-								: ""}
-						</Text>
-					</View>
-					<View style={styles.button}>
-						<Pressable
-							onPress={onSaveAsFavorite}
-							style={({ pressed }) => pressed && styles.pressed}
-						>
-							<Text style={[styles.buttonText, styles.textColor]}>
-								Spara som favorit
-							</Text>
-						</Pressable>
-					</View>
-					{/* <Button title='Spara som favorit' onPress={onSaveAsFavorite} /> */}
+					{showLocalityWeather()}
 				</View>
 			</ImageBackground>
 		</View>

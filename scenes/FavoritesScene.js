@@ -9,13 +9,6 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#383099"
 	},
-	heading: {
-		fontSize: 32,
-		fontWeight: "bold",
-		textAlign: "center",
-		marginVertical: 24,
-		color: "#ffffff"
-	},
 	item: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -66,7 +59,7 @@ export default ({ navigation }) => {
 					<IconButton
 						icon="trash-o"
 						color="#9f1919"
-						size="24"
+						size={24}
 						onPress={() => onDeleteFavoriteHandler(itemData.item.id)}
 					/>
 				</View>
@@ -76,7 +69,6 @@ export default ({ navigation }) => {
 
 	return (
 		<View style={styles.screen}>
-			<Text style={styles.heading}>Min favorit städer</Text>
 			<FlatList
 				data={favorites}
 				renderItem={renderFavorite}

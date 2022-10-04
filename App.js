@@ -25,7 +25,7 @@ export default () => (
 				screenOptions={{
 					headerStyle: { backgroundColor: "#560856" },
 					headerTintColor: "#ffffff",
-					title: "Väder"
+					title: "Thunderstorm"
 				}}
 			>
 				<Stack.Screen
@@ -47,7 +47,7 @@ export default () => (
 				<Stack.Screen
 					name="Favorites"
 					component={FavoritesScene}
-					options={{ title: "Mina favorit städer" }}
+					options={{ title: "Favorites" }}
 				/>
 				<Stack.Screen
 					name="Details"

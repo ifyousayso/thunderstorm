@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const WEATHER_URL =
-	"https://api.openweathermap.org/data/2.5/weather?appid=bd1437c53b15df8bd7e809ef8391d83d&units=metric&lang=se&";
+	"https://api.openweathermap.org/data/2.5/weather?appid=bd1437c53b15df8bd7e809ef8391d83d&units=metric&lang=en&";
 const FIREBASE_URL =
 	"https://thunderstorm-4d940-default-rtdb.europe-west1.firebasedatabase.app/";
 const FIREBASE_NAME = "favorites";
@@ -23,7 +23,7 @@ export async function getWeatherByCity(city) {
 		response = await axios.get(url);
 		return response.data;
 	} catch (error) {
-		throw new Error("Ett fel har inträffat");
+		throw new Error("An error has occured.");
 	}
 }
 
